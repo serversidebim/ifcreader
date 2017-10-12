@@ -1,0 +1,5 @@
+vendor/
+nbproject/
+composer.lock
+.DS_Store
+tests/largefile.ifc
