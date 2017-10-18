@@ -22,9 +22,7 @@ class IFCStepReader implements iIFCReader {
     private $headerstart = null;
     private $headerend = null;
     private $feof = false;
-    private $indexed = false;
-    private $indexfile = null;
-    private $index = null;
+    private $db = null;
 
     public function __construct($filename) {
         $this->header = new IFCStepFileHeader();
@@ -34,10 +32,6 @@ class IFCStepReader implements iIFCReader {
     public function __destruct() {
         if (is_resource($this->fh)) {
             fclose($this->fh);
-        }
-        if ($this->index) {
-            $this->index->close();
-            @unlink($this->indexfile);
         }
     }
 
@@ -126,7 +120,7 @@ class IFCStepReader implements iIFCReader {
         }
     }
 
-    public function parse() {
+    public function parse($temp = TRUE, $folder = NULL, $filename = NULL) {
         if ($this->feof) {
             return; // file already parsed
         }
@@ -135,29 +129,41 @@ class IFCStepReader implements iIFCReader {
             fseek($fh, $this->headerend);
         }
         
+        $this->db->begin_transaction();
+        
         while (!feof($fh)) {
             $linedata = $this->parseNextLine();
             if ($linedata && $linedata['id']) {
                 // found an IFC record
                 //echo $linedata['id'] . "\n";
                 $entity = new IFCSimpleEntity($linedata['class'], $linedata['data'], $linedata['id'], $linedata['raw']);
-                $this->fireEvent('entity', new IFCEvent($entity));
+                $this->db->insert($entity);
+//                $this->fireEvent('entity', new IFCEvent($entity));
             }
         }
         
-        $this->feof = true; // file fully parsed
-        
+        $this->db->commit();
+        $this->feof = true; // file fully parsed         
     }
-
+    
+    public function setdb($temp, $folder, $filename){
+        $this->db = new IFCDatastore($temp, $folder, $filename);
+        return $this;
+    }
+    
+    public function db(){
+        return $this->db;
+    }
+    
     public function openFile() {
         if (!is_resource($this->fh)) {
             if (is_file($this->filename)) {
                 $fh = fopen($this->filename, "r");
                 if (!is_resource($fh)) {
-                    throw new Exception("Could not open file $filename");
+                    throw new Exception("Could not open file $this->filename");
                 }
             } else {
-                throw new Exception("Filename $filename is not a file");
+                throw new Exception("Filename $this->filename is not a file");
             }
             $this->fh = $fh;
             return $fh;
@@ -186,7 +192,7 @@ class IFCStepReader implements iIFCReader {
         if (!preg_match('/;\s*$/s', $line)) {
             // line does not end with a ;, so append the next line
             $line = preg_replace('/\r?\n/m','',$line); // replace newline chars
-            $line += $this->getNextLine(); 
+            $line .= $this->getNextLine();
         }
         
         return $line;
@@ -209,196 +215,54 @@ class IFCStepReader implements iIFCReader {
         return self::parseLineForData($line);
     }
 
-    public static function parseLineForData($line) {
+    public function parseLineForData($line) {
         // first we catch the name
         $matches = [];
-        if (preg_match('/^(\#(\d+)\s?=\s?)?(\w+\b)+(.*?)$/', $line, $matches) == 1) {
+                
+        if (preg_match('/^(?:\#(\d+)\s?=\s?)?(\w+\b)+(.*)$/', $line, $matches) == 1) {
             // match found
-            $id = $matches[2];
-            $name = $matches[3];
-            $raw = $matches[4];
-
-            $items = array();
-            $in_item = false;
-            $in_quotes = false;
-            $quote = "";
-            $value = "";
-
-            $arrays = [&$items];
-
-            //for ($i = strpos($line, $name) + strlen($name); $i < strlen($line); $i++) {
-            for ($i = 0;$i<strlen($raw);$i++) {
-                $char = $raw[$i];
-                if ($char == "(" && !$in_item) {
-                    // entering item
-                    $in_item = true;
-                } elseif ($char == "(" && !$in_quotes) {
-                    // start of new array?
-                    if (isset($ar)) {
-                        unset($ar);
-                    }
-                    $ar = [];
-                    $arrays[] = & $ar;
-                } elseif ($char == ")" && !$in_quotes) {
-                    // ending of array or item
-                    if (count($arrays) == 1) {
-                        // closing of item
-                        if (isset($value)) {
-                            //add value to array
-                            $end_ar = &$arrays[count($arrays) - 1];
-                            array_push($end_ar, $value);
-                            unset($value);
-                        }
-                        break;
-                    } else {
-                        // closing of array
-                        if (isset($value)) {
-                            //add value to array
-                            $end_ar = &$arrays[count($arrays) - 1];
-                            array_push($end_ar, $value);
-                            unset($value);
-                        }
-
-                        $ar = &$arrays[count($arrays) - 1];
-                        array_pop($arrays);
-                        $end_ar = &$arrays[count($arrays) - 1];
-                        $end_ar[] = & $ar;
-                    }
-                } elseif ($char == "," && !$in_quotes) {
-                    // seperator character
-                    if (isset($value)) {
-                        //add value to array
-                        $end_ar = &$arrays[count($arrays) - 1];
-                        array_push($end_ar, $value);
-                        unset($value);
-                    }
-                } elseif (in_array($char, ["\"", "'"])) { // quote
-                    if ($in_quotes) {
-                        // check if quote is equal
-                        if ($char == $quote && $line[$i - 1] != "\\") {
-                            // ending of quote
-                            $in_quotes = false;
-                            //add value to array
-                            $end_ar = &$arrays[count($arrays) - 1];
-                            array_push($end_ar, $value);
-                            unset($value);
-                            //var_dump($end_ar);
-                        } else {
-                            // quote not equal or escaped, add to value
-                            $value .= $char;
-                        }
-                    } else { // not in quotes, start quote
-                        $in_quotes = true;
-                        $value = "";
-                        $quote = $char;
-                    }
-                } else {
-                    if (!isset($value)) {
-                        $value = "";
-                    }
-                    $value .= $char;
-                }
+            $id = $matches[1];
+            $name = $matches[2];
+            $raw = $matches[3];
+            
+            //check if there is an ID
+            if(!$id){
+                return false;
             }
-
+            
+            $items = $this->split_args(rtrim($raw,';'));
+            
             return [
                 "id" => $id,
                 "class" => $name,
                 "raw"=> $raw,
-                "data" => $items,
+                "data" => json_encode($items)
             ];
         } else {
             return false; // TODO or throw error?
         }
     }
     
-    /**
-     * Loops through the IFC file and indexes the id's to a
-     * temporaty SQLite database. This database is stored in $folder, or
-     * in the sys_get_temp_dir() folder if unspecified by the user.
+    /** Function to split the raw argument list into nested arrays
      * 
-     * The temporary SQLite database is removed automatically when this
-     * class is unloaded
-     * 
-     * @param string $folder Path to the folder to store the temporary database
-     * @return boolean True on success
-     * @throws Exception On failure, in case of non-existence of $this->filename
+     * @param string $raw
+     * @return array 
      */
-    public function index($folder = null) {
-        $filename = $this->filename;
-        
-        if ($folder !== null) {
-            if ($folder = realpath($folder)) {
-                if (!is_dir($folder)) {
-                    throw new Exception("Folder $folder is not a folder");
-                }
-            }
-            else {
-                throw new Exception("Folder $folder does not exist");
-            }
-        }
-        else {
-            $folder = sys_get_temp_dir();
-        }
-
-        if (is_file($filename)) {
-            $this->filename = $filename;
-            $fh = fopen($filename, "r");
-            if (!is_resource($fh)) {
-                throw new Exception("Could not open file $filename");
-            }
-            
-            $this->indexfile = tempnam($folder, 'IFCReader_');
-            $db = new \SQLite3($this->indexfile);
-            $db->exec('CREATE TABLE ifc (i STRING, l INTEGER)');
-            $this->index = $db;
-
-            // Now that we have opened the file, index it
-            //$counter = 0;
-            $db->exec("BEGIN TRANSACTION");
-            while(!feof($fh)) {
-                $num = ftell($fh);
-                $line = $this->cleanLine(fgets($fh));
-                
-                $match = [];
-                if (preg_match("/^\s*\#(\d+)/",$line,$match)) {
-                    // index the line!
-
-                    $sql = "INSERT INTO ifc (i,l) VALUES ('".$match[1]."', ".$num.")";
-                    // TODO: use prepared statement?
-                    
-                    $db->exec($sql);
-                    
-                }
-                // continue the while loop
-            }
-            $db->exec("COMMIT");
-
-            fclose($fh);
-        } else {
-            throw new Exception("Filename $filename is not a file");
+    private function split_args($raw){ 
+        $output_array = array();        
+        if($raw[0] === '(' && $raw[strlen($raw)-1] == ')'){
+            $raw = (substr($raw,1,-1));
         }
         
-        $this->indexed = true;
-        
-        return true;
+//      split on \"..\", \'..\', "..", '..' Then split on (..), finaly split everything on comma's
+//      $oldregex = "/\\\\\".*?\\\\\"|\\\'.*?\\\'|\\\".*?\\\"|\'.*?\'|[\(].*[\)]|[^\,\(\)\s][^\,\(\)]+[^\,\(\)\s]/";
+        $regex = "/\\\\\".*?\\\\\"|\\\'.*?\\\'|\\\".*?\\\"|\'.*?\'|[\(].*[\)]|[^\,]+/";
+        preg_match_all($regex, $raw,$output_array);
+        foreach($output_array[0] as &$item){            
+            if($item && ($item[0] == '(' && $item[strlen($item)-1] == ')')){
+                $item = $this->split_args($item);
+            }
+        }
+        return $output_array[0];        
     }
-    
-    /**
-     * 
-     * @param type $id
-     * @return type
-     */
-    public function find($id) {
-        if ($this->indexed) {
-            $db = $this->index;
-            
-            $stmt = $db->prepare('SELECT l FROM ifc WHERE i = :id');
-            $stmt->bindValue(':id', $id);
-
-            $result = $stmt->execute();
-
-            return $result->fetchArray()[0];
-        }
-    }
-
 }
