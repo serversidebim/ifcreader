@@ -120,7 +120,7 @@ class IFCStepReader implements iIFCReader {
         }
     }
 
-    public function parse($temp = TRUE, $folder = NULL, $filename = NULL) {
+    public function parse() {
         if ($this->feof) {
             return; // file already parsed
         }
@@ -129,6 +129,7 @@ class IFCStepReader implements iIFCReader {
             fseek($fh, $this->headerend);
         }
         
+		$this->checkDb();
         $this->db->begin_transaction();
         
         while (!feof($fh)) {
@@ -145,6 +146,13 @@ class IFCStepReader implements iIFCReader {
         $this->db->commit();
         $this->feof = true; // file fully parsed         
     }
+	
+	public function checkDb() {
+		if (!$this->db) {
+			$this->db = new IFCDatastore();
+		}
+		return true;
+	}
     
     public function setdb($temp, $folder, $filename){
         $this->db = new IFCDatastore($temp, $folder, $filename);
