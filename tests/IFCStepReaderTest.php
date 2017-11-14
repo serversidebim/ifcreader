@@ -17,55 +17,46 @@ class IFCStepReaderTest extends PHPUnit_Framework_TestCase{
   * any typo before you even use this library in a real project.
   *
   */
-    public function testIsThereAnySyntaxError(){
-          $var = new Serversidebim\IFCReader\IFCStepReader(null);
-          $this->assertTrue(is_object($var));
-          unset($var);
-    }
-
-    public function testLoad() {
-        $this->markTestSkipped(
-                'Temporarily disabled'
-              );
-        $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
-        $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
-        $reader->load();
-
-        $this->assertEquals("IFC2X3",$reader->schema()); 
-    }
-
-    public function testParseDB() {
-        $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
-        $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
-        $reader->load();
-        $reader->setdb(FALSE, realpath(dirname(__FILE__)), "/database.db")->parse();
-        while ($ent = $reader->db()->next()) {
-            //add hash and procceed the class and variables
-            $reader->db()->set_hash($ent['row_number'], '1');
-        }
-        $result = $reader->db()->get(298);        
-        $this->assertEquals('IFCCARTESIANPOINT',$result['class']);
-    }
-    
-    public function testParse(){
-        $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
-        $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
-        $reader->load();
-        $reader->setdb(FALSE, realpath(dirname(__FILE__)), "/database.db")->parse();
-        while ($ent = $reader->db()->next()) {
-            //add hash and procceed the class and variables
-            $reader->db()->set_hash($ent['row_number'], '1');
-            $this->assertEquals($ent['raw'], $this->implode_recursive(json_decode(json_decode($ent['data']))) . ";");
-        }
-    }
-    
-    private function implode_recursive($array){
-        foreach($array as &$item){
-            if(is_array($item)){
-                $item = $this->implode_recursive($item);
-            }
-        }
-        return "(" . implode(",", $array) . ")";
-    }
+  public function testIsThereAnySyntaxError(){
+	$var = new Serversidebim\IFCReader\IFCStepReader(null);
+	$this->assertTrue(is_object($var));
+	unset($var);
+  }
+  
+  public function testLoad() {
+      $this->markTestSkipped(
+              'Temporarily disabled'
+            );
+      $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
+      $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
+      $reader->load();
+            
+      $this->assertEquals("IFC2X3",$reader->schema()); 
+  }
+  
+  
+  public function testParse() {
+      
+      $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
+      $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
+      $reader->load();
+      
+      $reader->on('entity', function($event){
+          $entity = $event->data;
+          //var_dump($entity);
+      })->parse();
+  }
+  
+  public function testIndex() {
+      $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
+      $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
+      $reader->index();
+      
+      // in the small file, ID 1236 should be at 45389
+      $this->assertEquals(45389, $reader->find(1236));
+      
+      // in the large file, ID 35 should be at 124953968
+      //$this->assertEquals(124953968, $reader->find(35));
+  }
   
 }
