@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+use PHPUnit\Framework\TestCase;
 
 /**
 *  Corresponding Class to test YourClass class
@@ -8,31 +10,32 @@
 *
 *  @author yourname
 */
-class IFCFileHeaderItemTest extends PHPUnit_Framework_TestCase{
-	
+class IFCFileHeaderItemTest extends TestCase
+{
+
   /**
-  * Just check if the YourClass has no syntax error 
+  * Just check if the YourClass has no syntax error
   *
   * This is just a simple check to make sure your library has no syntax error. This helps you troubleshoot
   * any typo before you even use this library in a real project.
   *
   */
-  public function testIsThereAnySyntaxError(){
-	$var = new Serversidebim\IFCReader\IFCFileHeaderItem("Maarten",["one","two"]);
-	$this->assertTrue(is_object($var));
-	unset($var);
-  }
-  
-  public function testItem(){
-	$item = new Serversidebim\IFCReader\IFCFileHeaderItem("Maarten",["one","two"]);
-        
+    public function testIsThereAnySyntaxError()
+    {
+        $var = new Serversidebim\IFCReader\IFCFileHeaderItem("Maarten", ["one","two"]);
+        $this->assertTrue(is_object($var));
+        unset($var);
+    }
+
+    public function testItem()
+    {
+        $item = new Serversidebim\IFCReader\IFCFileHeaderItem("Maarten", ["one","two"]);
+
         // try setting some values
         $item->one = "me";
         $item->two = "you";
-        
+
         $this->assertEquals("me", $item->one);
         $this->assertEquals("you", $item->two);
- 
-  }
-  
+    }
 }

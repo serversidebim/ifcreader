@@ -1,5 +1,7 @@
 <?php
 
+use PHPUnit\Framework\TestCase;
+
 /**
  *  Corresponding Class to test YourClass class
  *
@@ -8,22 +10,25 @@
  *
  *  @author yourname
  */
-class IFCStepFileHeaderTest extends PHPUnit_Framework_TestCase {
+class IFCStepFileHeaderTest extends TestCase
+{
 
     /**
-     * Just check if the YourClass has no syntax error 
+     * Just check if the YourClass has no syntax error
      *
      * This is just a simple check to make sure your library has no syntax error. This helps you troubleshoot
      * any typo before you even use this library in a real project.
      *
      */
-    public function testIsThereAnySyntaxError() {
+    public function testIsThereAnySyntaxError()
+    {
         $var = new Serversidebim\IFCReader\IFCStepFileHeader;
         $this->assertTrue(is_object($var));
         unset($var);
     }
 
-    public function testParseHeader() {
+    public function testParseHeader()
+    {
         $headerstring = "HEADER;
 
 /******************************************************************************************
@@ -41,21 +46,19 @@ class IFCStepFileHeaderTest extends PHPUnit_Framework_TestCase {
 * Header model creation date:     Fri May 05 15:27:04 2017
 * EDMuser:                        sdai-user
 * EDMgroup:                       sdai-group
-* License ID and type:            5605 : Permanent license. Expiry date: 
+* License ID and type:            5605 : Permanent license. Expiry date:
 * EDMstepFileFactory options:     020000
 ******************************************************************************************/
 FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
 FILE_NAME('','2017-05-05T15:27:06',(''),(''),'The EXPRESS Data Manager Version 5.02.0100.07 : 28 Aug 2013','20150220_1215(x64) - Exporter 16.0.428.0 - Default UI','');
 FILE_SCHEMA(('IFC2X3'));
 ENDSEC;";
-        
+
         $header = new Serversidebim\IFCReader\IFCStepFileHeader();
         $header->parseRaw($headerstring);
-                
-        $this->assertEquals(['IFC2X3'],$header->FILE_SCHEMA->schema);
-        
-        $this->assertEquals($header->SECTION_CONTEXT->context, NULL);
-        
-    }
 
+        $this->assertEquals(['IFC2X3'], $header->FILE_SCHEMA->schema);
+
+        $this->assertEquals($header->SECTION_CONTEXT->context, null);
+    }
 }
