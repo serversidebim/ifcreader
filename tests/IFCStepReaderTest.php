@@ -54,8 +54,21 @@ class IFCStepReaderTest extends TestCase
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
         $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
-        $reader->on('index', function ($event) {
+        $count = 0;
+        $reader->on('index', function ($event) use (&$count) {
             $this->assertCount(2, $event->data);
+            $count++;
+
+            if ($event->data['id'] == 1113) {
+                $ent = Serversidebim\IFCReader\IFCStepReader::parseLineForData($event->data['line']);
+                $this->assertCount(4, $ent['data']);
+            }
+            if ($event->data['id'] == 1239) {
+                $ent = Serversidebim\IFCReader\IFCStepReader::parseLineForData($event->data['line']);
+                $this->assertCount(11, $ent['data']);
+            }
         })->index();
+
+        $this->assertEquals(673, $count);
     }
 }

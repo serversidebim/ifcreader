@@ -250,6 +250,7 @@ class IFCStepReader extends IFCBaseReader
             $items = array();
             $in_item = false;
             $in_quotes = false;
+            $parseUntilNextComma = false;
             $quote = "";
             $value = "";
 
@@ -258,7 +259,33 @@ class IFCStepReader extends IFCBaseReader
             //for ($i = strpos($line, $name) + strlen($name); $i < strlen($line); $i++) {
             for ($i = 0;$i<strlen($raw);$i++) {
                 $char = $raw[$i];
-                if ($char == "(" && !$in_item) {
+
+                // parseUntilNextComma is meant for situations like:
+                // #1112= IFCPROPERTYSINGLEVALUE('Type Name',$,IFCTEXT('Level 1'),$);
+                // where there is suddenly a reference to an IFC type (IFCTEXT) in this case
+
+                if ($parseUntilNextComma && $in_quotes && $char == $quote && $raw[$i-1] != '\\') {
+                    // ending quote
+                    $in_quotes = false;
+                    $quote = "";
+                    $value .= $char;
+                } elseif ($parseUntilNextComma && !$in_quotes && ($char == '\'' || $char == '\"' || $char == "(")) {
+                    $in_quotes = true;
+                    if ($char == "(") {
+                        $quote = ")";
+                    } else {
+                        $quote = $char;
+                    }
+                    $value .= $char;
+                } elseif ($parseUntilNextComma && $in_quotes) { // if in quotes, just add to value
+                    $value .= $char;
+                } elseif ($parseUntilNextComma && $char != ',' && $char != ")") { // not in quotes, not a comma
+                    $value .= $char;
+                } elseif (($char=='.' || $char=='I') && !$in_quotes) {
+                    $value = $char;
+                    $in_quotes = false;
+                    $parseUntilNextComma = true;
+                } elseif ($char == "(" && !$in_item) {
                     // entering item
                     $in_item = true;
                 } elseif ($char == "(" && !$in_quotes) {
@@ -267,14 +294,15 @@ class IFCStepReader extends IFCBaseReader
                         unset($ar);
                     }
                     $ar = [];
-                    $arrays[] = & $ar;
+                    $arrays[] = &$ar;
                 } elseif ($char == ")" && !$in_quotes) {
                     // ending of array or item
+
                     if (count($arrays) == 1) {
                         // closing of item
                         if (isset($value)) {
-                            //add value to array
                             $end_ar = &$arrays[count($arrays) - 1];
+                            //add value to array
                             array_push($end_ar, $value);
                             unset($value);
                         }
@@ -282,8 +310,8 @@ class IFCStepReader extends IFCBaseReader
                     } else {
                         // closing of array
                         if (isset($value)) {
-                            //add value to array
                             $end_ar = &$arrays[count($arrays) - 1];
+                            //add value to array
                             array_push($end_ar, $value);
                             unset($value);
                         }
@@ -301,6 +329,7 @@ class IFCStepReader extends IFCBaseReader
                         array_push($end_ar, $value);
                         unset($value);
                     }
+                    $parseUntilNextComma = false;
                 } elseif (in_array($char, ["\"", "'"])) { // quote
                     if ($in_quotes) {
                         // check if quote is equal
@@ -311,7 +340,6 @@ class IFCStepReader extends IFCBaseReader
                             $end_ar = &$arrays[count($arrays) - 1];
                             array_push($end_ar, $value);
                             unset($value);
-                            //var_dump($end_ar);
                         } else {
                             // quote not equal or escaped, add to value
                             $value .= $char;
