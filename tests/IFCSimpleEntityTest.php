@@ -51,6 +51,8 @@ class IFCSimpleEntityTest extends TestCase
 
         $ent->mapToScheme($reader);
 
-        var_dump($ent);
+        // TODO: check the scheme
+
+        //var_dump($ent);
     }
 }

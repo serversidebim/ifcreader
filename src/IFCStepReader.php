@@ -12,10 +12,10 @@ use Exception;
  *
  *  @author Maarten Veerman
  */
-class IFCStepReader implements iIFCReader {
-
+class IFCStepReader extends IFCBaseReader
+{
     use IFCEventTrait;
-    
+
     private $filename = null;
     private $fh = null;
     public $header;
@@ -25,13 +25,16 @@ class IFCStepReader implements iIFCReader {
     private $indexed = false;
     private $indexfile = null;
     private $index = null;
+    private $loadedFromFile = false;
 
-    public function __construct($filename) {
+    public function __construct($filename = null)
+    {
         $this->header = new IFCStepFileHeader();
         $this->filename = $filename;
     }
 
-    public function __destruct() {
+    public function __destruct()
+    {
         if (is_resource($this->fh)) {
             fclose($this->fh);
         }
@@ -41,29 +44,39 @@ class IFCStepReader implements iIFCReader {
         }
     }
 
-    public function load() {
-        $filename = $this->filename;
-
-        if (is_file($filename)) {
-            $this->filename = $filename;
-            $fh = fopen($filename, "r");
-            if (!is_resource($fh)) {
-                throw new Exception("Could not open file $filename");
-            }
-
-            // Now that we have opened the file, check it
-            $this->checkFile($fh);
-
-            // Parse the header
-            $this->parseHeader($fh);
-
-            fclose($fh);
-        } else {
-            throw new Exception("Filename $filename is not a file");
-        }
+    public function loadFromFile(string $filename)
+    {
+        $this->closeFile();
+        $this->filename = $filename;
+        $this->openFile();
+        $this->load();
     }
 
-    private function checkFile($fh) {
+    public function loadFromResource($handle)
+    {
+        $this->filename = null;
+        if (!is_resource($handle)) {
+            throw new Exception("Provided resource is not a valid resource", 1);
+        }
+        $this->fh = $handle;
+        $this->load();
+    }
+
+    public function load()
+    {
+        // get the file handle
+        $fh = $this->openFile();
+
+        // Now that we have opened the file, check it
+        $this->checkFile($fh);
+
+        // Parse the header
+        $this->parseHeader($fh);
+    }
+
+    private function checkFile($fh)
+    {
+        rewind($fh);
         while ($line = fgets($fh)) {
             $line = trim($line);
             if ($line == "ISO-10303-21;") { // TODO: Sample IFC files include extra quotes?
@@ -82,16 +95,19 @@ class IFCStepReader implements iIFCReader {
         return;
     }
 
-    private function parseHeader($fh) {
+    private function parseHeader($fh)
+    {
         $header = $this->findHeader($fh);
         $this->header->parseRaw($header);
     }
 
-    public function schema() {
+    public function schema()
+    {
         return $this->header->FILE_SCHEMA->schema[0];
     }
 
-    private function findHeader($fh) {
+    private function findHeader($fh)
+    {
         $header = "";
         $found = false;
         $foundEnd = false;
@@ -126,7 +142,8 @@ class IFCStepReader implements iIFCReader {
         }
     }
 
-    public function parse() {
+    public function parse()
+    {
         if ($this->feof) {
             return; // file already parsed
         }
@@ -134,30 +151,30 @@ class IFCStepReader implements iIFCReader {
         if ($this->headerend) {
             fseek($fh, $this->headerend);
         }
-        
+
         while (!feof($fh)) {
             $linedata = $this->parseNextLine();
             if ($linedata && $linedata['id']) {
                 // found an IFC record
-                //echo $linedata['id'] . "\n";
                 $entity = new IFCSimpleEntity($linedata['class'], $linedata['data'], $linedata['id'], $linedata['raw']);
                 $this->fireEvent('entity', new IFCEvent($entity));
             }
         }
-        
+
         $this->feof = true; // file fully parsed
-        
     }
 
-    public function openFile() {
+    public function openFile()
+    {
         if (!is_resource($this->fh)) {
             if (is_file($this->filename)) {
                 $fh = fopen($this->filename, "r");
                 if (!is_resource($fh)) {
-                    throw new Exception("Could not open file $filename");
+                    throw new Exception("Could not open file $this->filename");
                 }
+                $this->loadedFromFile = true;
             } else {
-                throw new Exception("Filename $filename is not a file");
+                throw new Exception("Filename $this->filename is not a file");
             }
             $this->fh = $fh;
             return $fh;
@@ -165,43 +182,54 @@ class IFCStepReader implements iIFCReader {
             return $this->fh;
         }
     }
-    
+
+    public function closeFile()
+    {
+        if (is_resource($this->fh) && $this->loadedFromFile) {
+            return fclose($this->fh);
+        }
+        return true;
+    }
+
     /**
      * Retrieve the next full parseble line from the file
      * Cleans the line from comments and checks if line
      * spans multiple lines in the file
      * @return string The next line extracted from the file
      */
-    private function getNextLine() {
+    private function getNextLine()
+    {
         $fh = $this->fh;
         $line = fgets($fh);
-        
+
         if ($line === false) {
             return false;
         }
-        
+
         $line = $this->cleanLine($line);
-        
+
         // line exists, check if it ends with a ;
         if (!preg_match('/;\s*$/s', $line)) {
             // line does not end with a ;, so append the next line
-            $line = preg_replace('/\r?\n/m','',$line); // replace newline chars
-            $line += $this->getNextLine(); 
+            $line = preg_replace('/\r?\n/m', '', $line); // replace newline chars
+            $line .= $this->getNextLine();
         }
-        
+
         return $line;
     }
-    
+
     /**
      * Strips comments from line and applies trim()
      * @param string $line The line to clean
      * @return string The cleaned version of $line
      */
-    private function cleanLine($line) {
+    private function cleanLine($line)
+    {
         return trim(preg_replace('/\/\*.*?\*\/\s*/', '', $line));
     }
 
-    private function parseNextLine() {
+    private function parseNextLine()
+    {
         $line = $this->getNextLine();
         if ($line === false) {
             return false;
@@ -209,7 +237,8 @@ class IFCStepReader implements iIFCReader {
         return self::parseLineForData($line);
     }
 
-    public static function parseLineForData($line) {
+    public static function parseLineForData($line)
+    {
         // first we catch the name
         $matches = [];
         if (preg_match('/^(\#(\d+)\s?=\s?)?(\w+\b)+(.*?)$/', $line, $matches) == 1) {
@@ -310,95 +339,28 @@ class IFCStepReader implements iIFCReader {
             return false; // TODO or throw error?
         }
     }
-    
+
     /**
-     * Loops through the IFC file and indexes the id's to a
-     * temporaty SQLite database. This database is stored in $folder, or
-     * in the sys_get_temp_dir() folder if unspecified by the user.
-     * 
-     * The temporary SQLite database is removed automatically when this
-     * class is unloaded
-     * 
-     * @param string $folder Path to the folder to store the temporary database
+     * Loops through the IFC file and fires an event each time line is found
      * @return boolean True on success
      * @throws Exception On failure, in case of non-existence of $this->filename
      */
-    public function index($folder = null) {
-        $filename = $this->filename;
-        
-        if ($folder !== null) {
-            if ($folder = realpath($folder)) {
-                if (!is_dir($folder)) {
-                    throw new Exception("Folder $folder is not a folder");
-                }
+    public function index()
+    {
+        $fh = $this->openFile();
+        while (!feof($fh)) {
+            $line = $this->cleanLine(fgets($fh));
+
+            $match = [];
+            if (preg_match("/^\s*\#(\d+)/", $line, $match)) {
+                // index the line!
+                $this->fireEvent('index', new IFCEvent(["id"=>$match[1],"line"=>$line]));
             }
-            else {
-                throw new Exception("Folder $folder does not exist");
-            }
-        }
-        else {
-            $folder = sys_get_temp_dir();
+            // continue the while loop
         }
 
-        if (is_file($filename)) {
-            $this->filename = $filename;
-            $fh = fopen($filename, "r");
-            if (!is_resource($fh)) {
-                throw new Exception("Could not open file $filename");
-            }
-            
-            $this->indexfile = tempnam($folder, 'IFCReader_');
-            $db = new \SQLite3($this->indexfile);
-            $db->exec('CREATE TABLE ifc (i STRING, l INTEGER)');
-            $this->index = $db;
-
-            // Now that we have opened the file, index it
-            //$counter = 0;
-            $db->exec("BEGIN TRANSACTION");
-            while(!feof($fh)) {
-                $num = ftell($fh);
-                $line = $this->cleanLine(fgets($fh));
-                
-                $match = [];
-                if (preg_match("/^\s*\#(\d+)/",$line,$match)) {
-                    // index the line!
-
-                    $sql = "INSERT INTO ifc (i,l) VALUES ('".$match[1]."', ".$num.")";
-                    // TODO: use prepared statement?
-                    
-                    $db->exec($sql);
-                    
-                }
-                // continue the while loop
-            }
-            $db->exec("COMMIT");
-
-            fclose($fh);
-        } else {
-            throw new Exception("Filename $filename is not a file");
-        }
-        
         $this->indexed = true;
-        
+
         return true;
     }
-    
-    /**
-     * 
-     * @param type $id
-     * @return type
-     */
-    public function find($id) {
-        if ($this->indexed) {
-            $db = $this->index;
-            
-            $stmt = $db->prepare('SELECT l FROM ifc WHERE i = :id');
-            $stmt->bindValue(':id', $id);
-
-            $result = $stmt->execute();
-
-            return $result->fetchArray()[0];
-        }
-    }
-
 }

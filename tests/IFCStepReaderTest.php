@@ -1,5 +1,7 @@
 <?php
+
 use PHPUnit\Framework\TestCase;
+use Serversidebim\IFCReader\IFCSimpleEntity;
 
 /**
 *  Corresponding Class to test YourClass class
@@ -28,9 +30,6 @@ class IFCStepReaderTest extends TestCase
 
     public function testLoad()
     {
-        $this->markTestSkipped(
-              'Temporarily disabled'
-            );
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
         $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
         $reader->load();
@@ -47,7 +46,7 @@ class IFCStepReaderTest extends TestCase
 
         $reader->on('entity', function ($event) {
             $entity = $event->data;
-            //var_dump($entity);
+            $this->assertInstanceOf(IFCSimpleEntity::class, $entity);
         })->parse();
     }
 
@@ -55,12 +54,8 @@ class IFCStepReaderTest extends TestCase
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
         $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
-        $reader->index();
-
-        // in the small file, ID 1236 should be at 45389
-        $this->assertEquals(45389, $reader->find(1236));
-
-        // in the large file, ID 35 should be at 124953968
-      //$this->assertEquals(124953968, $reader->find(35));
+        $reader->on('index', function ($event) {
+            $this->assertCount(2, $event->data);
+        })->index();
     }
 }
