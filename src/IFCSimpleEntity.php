@@ -37,7 +37,7 @@ class IFCSimpleEntity {
         
         // check?
         if (count($this->data) !== count($item->parameters)){
-            throw Error("There seems to be a mismatch between the entities");
+            throw new Exception("There seems to be a mismatch between the entities");
         }
         
         $keys = array_keys($item->parameters);
