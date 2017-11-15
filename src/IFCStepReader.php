@@ -156,13 +156,18 @@ class IFCStepReader extends IFCBaseReader
             $linedata = $this->parseNextLine();
             if ($linedata && $linedata['id']) {
                 // found an IFC record
-                $entity = new IFCSimpleEntity($linedata['class'], $linedata['data'], $linedata['id'], $linedata['raw']);
+                $entity = $this->createEntityFromArray($linedata);
                 $this->fireEvent('entity', new IFCEvent($entity));
             }
         }
 
         $this->feof = true; // file fully parsed
     }
+	
+	public function createEntityFromArray($data) {
+		$entity = new IFCSimpleEntity($data['class'], $data['data'], $data['id'], $data['raw']);
+		return $entity;
+	}
 
     public function openFile()
     {
