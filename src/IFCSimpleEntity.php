@@ -9,6 +9,7 @@
 namespace Serversidebim\IFCReader;
 
 use Serversidebim\ExpressReader\Reader as Scheme;
+use Exception;
 
 /**
  * Description of IFCSimpleEntity
