@@ -78,6 +78,10 @@ class IFCStepReaderTest extends TestCase
                 $this->assertCount(11, $ent['data']);
                 //var_dump($ent['data']);
             }
+            if ($event->data['id'] == 94) {
+                $ent = Serversidebim\IFCReader\IFCStepReader::parseLineForData($event->data['line']);
+                $this->assertCount(9, $ent['data']);
+            }
         })->index();
 
         $this->assertEquals(673, $count);

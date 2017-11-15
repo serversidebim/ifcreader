@@ -163,11 +163,12 @@ class IFCStepReader extends IFCBaseReader
 
         $this->feof = true; // file fully parsed
     }
-	
-	public function createEntityFromArray($data) {
-		$entity = new IFCSimpleEntity($data['class'], $data['data'], $data['id'], $data['raw']);
-		return $entity;
-	}
+
+    public function createEntityFromArray($data)
+    {
+        $entity = new IFCSimpleEntity($data['class'], $data['data'], $data['id'], $data['raw']);
+        return $entity;
+    }
 
     public function openFile()
     {
@@ -338,7 +339,7 @@ class IFCStepReader extends IFCBaseReader
                 } elseif (in_array($char, ["\"", "'"])) { // quote
                     if ($in_quotes) {
                         // check if quote is equal
-                        if ($char == $quote && $line[$i - 1] != "\\") {
+                        if ($char == $quote && $raw[$i - 1] != "\\") {
                             // ending of quote
                             $in_quotes = false;
                             //add value to array
