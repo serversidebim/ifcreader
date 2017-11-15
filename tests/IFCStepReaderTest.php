@@ -50,6 +50,35 @@ class IFCStepReaderTest extends TestCase
         })->parse();
     }
 
+    public function testEntityMapper()
+    {
+        $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
+        $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
+        $reader->load();
+
+        // Load the IFC Scheme
+        $contents = file_get_contents(__DIR__ . '/IFC2X3.exp');
+        $express = new Serversidebim\ExpressReader\Reader();
+        $express->parse($contents);
+
+        $reader->on('entity', function ($event) use ($express) {
+            $entity = $event->data;
+            // Now map
+            try {
+                $entity->mapToScheme($express);
+            } catch (Exception $e) {
+                //var_dump('ERROR!');
+                //var_dump($entity);
+                //var_dump($express->getFullEntity($entity->class));
+
+
+                throw new Exception($e);
+            }
+        })->parse();
+
+        $this->assertTrue(true);
+    }
+
     public function testIndex()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
