@@ -76,6 +76,23 @@ class IFCStepReaderTest extends TestCase
             }
         })->parse();
 
+        // Do a custom test on a line:
+        $line = "#25230=IFCPROPERTYSINGLEVALUE('Reference',$,IFCLABEL('Basic Wall:22 KALKZANDSTEEN 100 (niet dragend)'),$);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        //var_dump($parsed);
+        //var_dump("SPECIFICATION:");
+        //var_dump($express->getFullEntity($parsed['class']));
+        $entity->mapToScheme($express);
+
+        $line = "#157= IFCSURFACESTYLERENDERING(#156,0.,$,$,$,$,IFCNORMALISEDRATIOMEASURE(0.5),IFCSPECULAREXPONENT(64.),.NOTDEFINED.);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        //var_dump($parsed);
+        //var_dump("SPECIFICATION:");
+        //var_dump($express->getFullEntity($parsed['class']));
+        $entity->mapToScheme($express);
+
         $this->assertTrue(true);
     }
 

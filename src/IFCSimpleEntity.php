@@ -41,7 +41,7 @@ class IFCSimpleEntity
 
         // check?
         if (count($this->data) !== count($item->parameters)) {
-            throw new Exception("There seems to be a mismatch between the entities: ".count($this->data).' vs '.count($item->parameters));
+            throw new Exception("There seems to be a mismatch between the entities on class ".$this->class.": ".count($this->data).' vs '.count($item->parameters));
         }
 
         $keys = array_keys($item->parameters);

@@ -275,16 +275,19 @@ class IFCStepReader extends IFCBaseReader
                     $in_quotes = false;
                     $quote = "";
                     $value .= $char;
-                } elseif ($parseUntilNextComma && !$in_quotes && ($char == '\'' || $char == '\"' || $char == "(")) {
+                } elseif ($parseUntilNextComma && !$in_quotes && ($char == '\'' || $char == '\"')) { // || $char == "(")
                     $in_quotes = true;
-                    if ($char == "(") {
+                    /*if ($char == "(") {
                         $quote = ")";
-                    } else {
-                        $quote = $char;
-                    }
+                    } else {*/
+                    $quote = $char;
+                    //}
                     $value .= $char;
                 } elseif ($parseUntilNextComma && $in_quotes) { // if in quotes, just add to value
                     $value .= $char;
+                } elseif ($parseUntilNextComma && strtoupper($value[0]) == "I" && $char == ")") {
+                    $value .= $char;
+                    $parseUntilNextComma = false;
                 } elseif ($parseUntilNextComma && $char != ',' && $char != ")") { // not in quotes, not a comma
                     $value .= $char;
                 } elseif (($char=='.' || $char=='I') && !$in_quotes && !isset($value)) {
