@@ -27,6 +27,11 @@ class IFCStepReader extends IFCBaseReader
     private $index = null;
     private $loadedFromFile = false;
 
+    private $offset = 0;
+    private $maxLines = PHP_INT_MAX;
+    private $pointer = 0;
+
+
     public function __construct($filename = null)
     {
         $this->header = new IFCStepFileHeader();
@@ -385,19 +390,48 @@ class IFCStepReader extends IFCBaseReader
     public function index()
     {
         $fh = $this->openFile();
-        while (!feof($fh)) {
+        fseek($fh, $this->offset);
+
+        $counter = 0;
+        while (!feof($fh) && $counter < $this->maxLines) {
             $line = $this->cleanLine(fgets($fh));
+            $this->pointer = ftell($fh);
 
             $match = [];
             if (preg_match("/^\s*\#(\d+)/", $line, $match)) {
                 // index the line!
                 $this->fireEvent('index', new IFCEvent(["id"=>$match[1],"line"=>$line]));
+                $counter++;
             }
             // continue the while loop
         }
 
-        $this->indexed = true;
+        if (feof($fh)) {
+          $this->indexed = true;
+        }
 
         return true;
+    }
+
+    public function offset($offset) {
+      $this->offset = $offset;
+      return $this;
+    }
+
+    public function maxLines($maxLines) {
+      $this->maxLines = $maxLines;
+      return $this;
+    }
+
+    public function feof() {
+      return $this->feof;
+    }
+
+    public function indexed() {
+      return $this->indexed;
+    }
+
+    public function pointer() {
+      return $this->pointer;
     }
 }
