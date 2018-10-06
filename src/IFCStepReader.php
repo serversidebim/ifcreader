@@ -398,40 +398,56 @@ class IFCStepReader extends IFCBaseReader
             $this->pointer = ftell($fh);
 
             $match = [];
-            if (preg_match("/^\s*\#(\d+)/", $line, $match)) {
+            /*if (preg_match("/^\s*\#(\d+)/", $line, $match)) {
                 // index the line!
                 $this->fireEvent('index', new IFCEvent(["id"=>$match[1],"line"=>$line]));
+                $counter++;
+            }*/
+            if (preg_match('/^(\#(\d+)\s?=\s?){1}(\w+\b)+(.*?)$/', $line, $match) == 1) {
+                // match found
+                // index the line!
+                $this->fireEvent('index', new IFCEvent([
+                  "id"=>$match[2],
+                  "name"=>$match[3],
+                  "raw"=>$match[4],
+                  "line"=>$line
+                ]));
                 $counter++;
             }
             // continue the while loop
         }
 
         if (feof($fh)) {
-          $this->indexed = true;
+            $this->indexed = true;
         }
 
         return true;
     }
 
-    public function offset($offset) {
-      $this->offset = $offset;
-      return $this;
+    public function offset($offset)
+    {
+        $this->offset = $offset;
+        return $this;
     }
 
-    public function maxLines($maxLines) {
-      $this->maxLines = $maxLines;
-      return $this;
+    public function maxLines($maxLines)
+    {
+        $this->maxLines = $maxLines;
+        return $this;
     }
 
-    public function feof() {
-      return $this->feof;
+    public function feof()
+    {
+        return $this->feof;
     }
 
-    public function indexed() {
-      return $this->indexed;
+    public function indexed()
+    {
+        return $this->indexed;
     }
 
-    public function pointer() {
-      return $this->pointer;
+    public function pointer()
+    {
+        return $this->pointer;
     }
 }
