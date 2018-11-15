@@ -132,4 +132,62 @@ class IFCStepReaderTest extends TestCase
 
         $this->assertEquals(673, $count);
     }
+
+    public function testMapParametersToTrueValues()
+    {
+        $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
+        $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
+        $reader->load();
+
+        // Load the IFC Scheme
+        $contents = file_get_contents(__DIR__ . '/IFC2X3.exp');
+        $express = new Serversidebim\ExpressReader\Reader();
+        $express->parse($contents);
+
+        $reader->on('entity', function ($event) use ($express) {
+            $entity = $event->data;
+            // Now map
+            try {
+                $entity->mapToScheme($express);
+            } catch (Exception $e) {
+                //var_dump('ERROR!');
+                //var_dump($entity);
+                //var_dump($express->getFullEntity($entity->class));
+
+
+                throw new Exception($e);
+            }
+        })->parse();
+
+        // Do a custom test on a line:
+        $line = "#25230=IFCPROPERTYSINGLEVALUE('Reference',$,IFCLABEL('Basic Wall:22 KALKZANDSTEEN 100 (niet dragend)'),$);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertEquals("IFCLABEL", $clean['NominalValue']['type']);
+        $this->assertEquals("Basic Wall:22 KALKZANDSTEEN 100 (niet dragend)", $clean['NominalValue']['value']);
+
+        $line = "#157= IFCSURFACESTYLERENDERING(#156,0.,$,$,$,$,IFCNORMALISEDRATIOMEASURE(0.5),IFCSPECULAREXPONENT(64.),.NOTDEFINED.);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertTrue($clean['Transparency'] === 0.0);
+        $this->assertTrue($clean['SpecularColour']['value'] === 0.5);
+        $this->assertEquals('NOTDEFINED', $clean['ReflectanceMethod']);
+
+        $line = "#204= IFCPROPERTYSINGLEVALUE('Base is Attached',$,IFCBOOLEAN(.F.),$);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertEquals('Base is Attached', $clean['Name']);
+        $this->assertFalse($clean['NominalValue']['value']);
+
+        $this->assertTrue(true);
+    }
 }
