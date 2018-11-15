@@ -102,7 +102,7 @@ class IFCStepReaderTest extends TestCase
         $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
         $count = 0;
         $reader->on('index', function ($event) use (&$count) {
-            $this->assertCount(2, $event->data);
+            $this->assertCount(4, $event->data);
             $count++;
 
             if ($event->data['id'] == 9) {
