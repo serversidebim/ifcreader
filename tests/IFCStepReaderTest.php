@@ -188,6 +188,16 @@ class IFCStepReaderTest extends TestCase
         $this->assertEquals('Base is Attached', $clean['Name']);
         $this->assertFalse($clean['NominalValue']['value']);
 
+        //$line = "#1= IFCORGANIZATION($,'Autodesk Revit 2016 (ENU)',$,$,$)";
+        $line = "#21= IFCDIRECTION((0.,0.,-1.));";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertEquals(-1.0, $clean['DirectionRatios'][2]);
+        $this->assertFalse($clean['NominalValue']['value']);
+
         $this->assertTrue(true);
     }
 }

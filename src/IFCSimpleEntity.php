@@ -25,6 +25,18 @@ class IFCSimpleEntity
     public $id;
     public $raw;
 
+    protected $baseTypes = [
+      'BOOLEAN',
+      'REAL',
+      'BINARY',
+      'INTEGER',
+      'NUMBER',
+      'STRING',
+      'ENUMERATION',
+      'SELECT',
+      'LOGICAL',
+    ];
+
     public function __construct($class, $data, $id = null, $raw = null)
     {
         $this->class = $class;
@@ -65,11 +77,19 @@ class IFCSimpleEntity
 
         foreach ($parameters as $paramName=>$param) {
             // Check if type is an entity
-            if ($scheme->getEntity($param->type)) {
+
+            $type = is_array($param->type) ? $param->type['OF'] : $param->type;
+
+            if ($scheme->getEntity($type)) {
                 // Do nothing
                 continue;
             }
-            $trueType = $scheme->getType($param->type)->getTrueType();
+
+            if (in_array($type, $this->baseTypes)) {
+                $trueType = $type;
+            } else {
+                $trueType = $scheme->getType($type)->getTrueType();
+            }
 
             $cleanData[$paramName] = $this->cleanParameter($cleanData[$paramName], $trueType, $scheme);
         }
@@ -79,6 +99,12 @@ class IFCSimpleEntity
 
     private function cleanParameter($param, $trueType, Scheme $scheme)
     {
+        if (is_array($param)) {
+            for ($i=0; $i < count($param); $i++) {
+                $param[$i] = $this->cleanParameter($param[$i], $trueType, $scheme);
+            }
+            return $param;
+        }
         if ($trueType == 'REAL') {
             return (real)$param;
         }
