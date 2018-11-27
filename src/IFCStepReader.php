@@ -29,6 +29,7 @@ class IFCStepReader extends IFCBaseReader
 
     private $offset = 0;
     private $maxLines = PHP_INT_MAX;
+    private $maxPointer = PHP_INT_MAX;
     private $pointer = 0;
 
 
@@ -393,7 +394,7 @@ class IFCStepReader extends IFCBaseReader
         fseek($fh, $this->offset);
 
         $counter = 0;
-        while (!feof($fh) && $counter < $this->maxLines) {
+        while (!feof($fh) && $counter < $this->maxLines && $this->pointer < $this->maxPointer) {
             $line = $this->cleanLine(fgets($fh));
             $this->pointer = ftell($fh);
 
@@ -433,6 +434,12 @@ class IFCStepReader extends IFCBaseReader
     public function maxLines($maxLines)
     {
         $this->maxLines = $maxLines;
+        return $this;
+    }
+
+    public function maxPointer($maxPointer)
+    {
+        $this->maxPointer = $maxPointer;
         return $this;
     }
 
