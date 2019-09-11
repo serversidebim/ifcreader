@@ -127,7 +127,7 @@ class IFCSimpleEntity
                     return true;
                 }
                 if ($matches[2] == 'F') {
-                    return true;
+                    return false;
                 }
                 if ($matches[2] == 'U') {
                     return null;
