@@ -147,10 +147,14 @@ class IFCSimpleEntity
                 if ($matches[2]) {
                     $type = $scheme->getType($matches[2])->getTrueType();
 
-                    return [
+                    $returnAr = [
                         "type"=>$matches[2],
                         "value"=>$this->cleanParameter($matches[3], $type, $scheme)
                       ];
+                    if ($type == "REAL" || $type == "NUMBER") {
+                        $returnAr['orig_value'] = $matches[3];
+                    }
+                    return $returnAr;
                 }
                 return $matches[3];
             }

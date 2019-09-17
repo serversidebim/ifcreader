@@ -196,7 +196,24 @@ class IFCStepReaderTest extends TestCase
         $clean = $entity->cleanData($express);
 
         $this->assertEquals(-1.0, $clean['DirectionRatios'][2]);
-        
+
+        $this->assertTrue(true);
+
+        $line = "#48= IFCMEASUREWITHUNIT(IFCRATIOMEASURE(0.0174532925199433),#46);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertArrayHasKey('ValueComponent', $clean);
+        $this->assertTrue(is_array($clean['ValueComponent']));
+        $this->assertArrayHasKey('type', $clean['ValueComponent']);
+        $this->assertEquals('IFCRATIOMEASURE', $clean['ValueComponent']['type']);
+        $this->assertEquals('0.0174532925199433', $clean['ValueComponent']['value']);
+
+        $this->assertTrue($clean['ValueComponent']['value'] === (float)'0.0174532925199433');
+        $this->assertTrue($clean['ValueComponent']['orig_value'] === '0.0174532925199433');
+
         $this->assertTrue(true);
     }
 }

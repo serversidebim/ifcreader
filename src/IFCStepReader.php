@@ -264,7 +264,7 @@ class IFCStepReader extends IFCBaseReader
             $in_quotes = false;
             $parseUntilNextComma = false;
             $quote = "";
-            $value = "";
+            $value = null;
 
             $arrays = [&$items];
 
@@ -312,7 +312,6 @@ class IFCStepReader extends IFCBaseReader
                     $arrays[] = &$ar;
                 } elseif ($char == ")" && !$in_quotes) {
                     // ending of array or item
-
                     if (count($arrays) == 1) {
                         // closing of item
                         if (isset($value)) {
