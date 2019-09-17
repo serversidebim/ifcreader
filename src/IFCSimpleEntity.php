@@ -105,6 +105,11 @@ class IFCSimpleEntity
             }
             return $param;
         }
+
+        if ($param == '*') {
+            return $param;
+        }
+
         if ($trueType == 'REAL') {
             return (real)$param;
         }

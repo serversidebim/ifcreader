@@ -214,6 +214,17 @@ class IFCStepReaderTest extends TestCase
         $this->assertTrue($clean['ValueComponent']['value'] === (float)'0.0174532925199433');
         $this->assertTrue($clean['ValueComponent']['orig_value'] === '0.0174532925199433');
 
+        $line = "#100= IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Axis','Model',*,*,*,*,#97,$,.GRAPH_VIEW.,$);";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertArrayHasKey('CoordinateSpaceDimension', $clean);
+        $this->assertEquals('*', $clean['CoordinateSpaceDimension']);
+        $this->assertArrayHasKey('Precision', $clean);
+        $this->assertEquals('*', $clean['Precision']);
+
         $this->assertTrue(true);
     }
 }
