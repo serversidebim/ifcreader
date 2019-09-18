@@ -224,6 +224,7 @@ class IFCStepReaderTest extends TestCase
         $this->assertEquals('*', $clean['CoordinateSpaceDimension']);
         $this->assertArrayHasKey('Precision', $clean);
         $this->assertEquals('*', $clean['Precision']);
+        $this->assertEquals('$', $clean['TargetScale']);
 
         $this->assertTrue(true);
     }
