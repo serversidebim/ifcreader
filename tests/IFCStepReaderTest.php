@@ -44,6 +44,8 @@ class IFCStepReaderTest extends TestCase
         $reader = new Serversidebim\IFCReader\IFCStepReader($filename);
         $reader->load();
 
+        $this->assertEquals("IFC2X3", $reader->header->FILE_SCHEMA->schema[0]);
+
         $reader->on('entity', function ($event) {
             $entity = $event->data;
             $this->assertInstanceOf(IFCSimpleEntity::class, $entity);

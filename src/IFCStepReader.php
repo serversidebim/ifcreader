@@ -123,7 +123,7 @@ class IFCStepReader extends IFCBaseReader
         while ($line = fgets($fh)) {
             if (!$found) {
                 // look for HEADER
-                if (trim($line) == "HEADER;") {
+                if (preg_match('@^HEADER;@i', trim($line))) {
                     // header found
                     $found = true;
                     $this->headerstart = $cursor;
