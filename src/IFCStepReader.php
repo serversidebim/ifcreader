@@ -31,6 +31,7 @@ class IFCStepReader extends IFCBaseReader
     private $maxLines = PHP_INT_MAX;
     private $maxPointer = PHP_INT_MAX;
     private $pointer = 0;
+    private $previousPointer = 0;
 
 
     public function __construct($filename = null)
@@ -394,6 +395,7 @@ class IFCStepReader extends IFCBaseReader
 
         $counter = 0;
         while (!feof($fh) && $counter < $this->maxLines && $this->pointer < $this->maxPointer) {
+            $this->previousPointer = $this->pointer;
             $line = $this->cleanLine(fgets($fh));
             $this->pointer = ftell($fh);
 
@@ -455,5 +457,10 @@ class IFCStepReader extends IFCBaseReader
     public function pointer()
     {
         return $this->pointer;
+    }
+
+    public function previousPointer()
+    {
+        return $this->previousPointer;
     }
 }
