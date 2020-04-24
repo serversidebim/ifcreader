@@ -229,5 +229,29 @@ class IFCStepReaderTest extends TestCase
         $this->assertEquals('$', $clean['TargetScale']);
 
         $this->assertTrue(true);
+
+        $line = "#3581445= IFCGROUP('09V80LSyD7ggoZnYUvK2qL',#41,'Model Group:merk F'':1058164',$,'Model Group:merk F''');";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertArrayHasKey('Name', $clean);
+        $this->assertEquals('Model Group:merk F\':1058164', $clean['Name']);
+        $this->assertArrayHasKey('ObjectType', $clean);
+        $this->assertEquals('Model Group:merk F\'', $clean['ObjectType']);
+
+        $this->assertTrue(true);
+
+        $line = "#171575= IFCPROPERTYSINGLEVALUE('Type Mark',$,IFCTEXT('\X2\x25CB25CB\X0\'),$)";
+        $parsed = Serversidebim\IFCReader\IFCStepReader::parseLineForData($line);
+        $entity = $reader->createEntityFromArray($parsed);
+        $entity->mapToScheme($express);
+        $clean = $entity->cleanData($express);
+
+        $this->assertArrayHasKey('NominalValue', $clean);
+        $this->assertEquals('"\u0002%CB25CB\u0000\\\"', json_encode($clean['NominalValue']['value']));
+
+        $this->assertTrue(true);
     }
 }

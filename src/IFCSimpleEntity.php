@@ -1,15 +1,10 @@
 <?php
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 namespace Serversidebim\IFCReader;
 
 use Serversidebim\ExpressReader\Reader as Scheme;
 use Exception;
+use function substr;
 
 /**
  * Description of IFCSimpleEntity
@@ -18,7 +13,6 @@ use Exception;
  */
 class IFCSimpleEntity
 {
-    //put your code here
 
     public $class;
     public $data;
@@ -26,15 +20,15 @@ class IFCSimpleEntity
     public $raw;
 
     protected $baseTypes = [
-      'BOOLEAN',
-      'REAL',
-      'BINARY',
-      'INTEGER',
-      'NUMBER',
-      'STRING',
-      'ENUMERATION',
-      'SELECT',
-      'LOGICAL',
+        'BOOLEAN',
+        'REAL',
+        'BINARY',
+        'INTEGER',
+        'NUMBER',
+        'STRING',
+        'ENUMERATION',
+        'SELECT',
+        'LOGICAL',
     ];
 
     public function __construct($class, $data, $id = null, $raw = null)
@@ -53,14 +47,14 @@ class IFCSimpleEntity
 
         // check?
         if (count($this->data) !== count($item->parameters)) {
-            throw new Exception("There seems to be a mismatch between the entities on class ".$this->class.": ".count($this->data).' vs '.count($item->parameters));
+            throw new Exception("There seems to be a mismatch between the entities on class " . $this->class . ": " . count($this->data) . ' vs ' . count($item->parameters) . '(' . json_encode($this) . ')');
         }
 
         $keys = array_keys($item->parameters);
 
         // set the data of $this to the correct parameters
         $newdata = [];
-        for ($i = 0;$i<count($this->data);$i++) {
+        for ($i = 0; $i < count($this->data); $i++) {
             $newdata[$keys[$i]] = $this->data[$i];
         }
         $this->data = $newdata;
@@ -75,7 +69,7 @@ class IFCSimpleEntity
 
         $cleanData = $this->data;
 
-        foreach ($parameters as $paramName=>$param) {
+        foreach ($parameters as $paramName => $param) {
             // Check if type is an entity
 
             $type = is_array($param->type) ? $param->type['OF'] : $param->type;
@@ -100,7 +94,7 @@ class IFCSimpleEntity
     private function cleanParameter($param, $trueType, Scheme $scheme)
     {
         if (is_array($param)) {
-            for ($i=0; $i < count($param); $i++) {
+            for ($i = 0; $i < count($param); $i++) {
                 $param[$i] = $this->cleanParameter($param[$i], $trueType, $scheme);
             }
             return $param;
@@ -125,7 +119,7 @@ class IFCSimpleEntity
         if ($trueType == 'BOOLEAN') {
             $matches = [];
             if (preg_match('/(IFCBOOLEAN\()*\.*([TF])\.*(\))*/', $param, $matches)) {
-                return $matches[2] == "T" ? true : false;
+                return $matches[2] == "T";
             }
         }
         if ($trueType == 'LOGICAL') {
@@ -156,9 +150,9 @@ class IFCSimpleEntity
                     $type = $scheme->getType($matches[2])->getTrueType();
 
                     $returnAr = [
-                        "type"=>$matches[2],
-                        "value"=>$this->cleanParameter($matches[3], $type, $scheme)
-                      ];
+                        "type" => $matches[2],
+                        "value" => $this->cleanParameter($matches[3], $type, $scheme)
+                    ];
                     if ($type == "REAL" || $type == "NUMBER") {
                         $returnAr['orig_value'] = $matches[3];
                     }
@@ -170,10 +164,10 @@ class IFCSimpleEntity
         if ($trueType == "STRING") {
             if (strlen($param) > 1) {
                 $firstChar = $param[0];
-                $lastChar = $param[strlen($param)-1];
-                if (in_array($firstChar, ['"','\'']) && $firstChar === $lastChar) {
+                $lastChar = $param[strlen($param) - 1];
+                if (in_array($firstChar, ['"', '\'']) && $firstChar === $lastChar) {
                     // remove the quotes
-                    return \substr($param, 1, -1);
+                    return substr($param, 1, -1);
                 }
             }
             return $param;

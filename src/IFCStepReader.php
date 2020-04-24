@@ -266,6 +266,7 @@ class IFCStepReader extends IFCBaseReader
             $parseUntilNextComma = false;
             $quote = "";
             $value = null;
+            $escaped = false;
 
             $arrays = [&$items];
 
@@ -277,7 +278,11 @@ class IFCStepReader extends IFCBaseReader
                 // #1112= IFCPROPERTYSINGLEVALUE('Type Name',$,IFCTEXT('Level 1'),$);
                 // where there is suddenly a reference to an IFC type (IFCTEXT) in this case
 
-                if ($parseUntilNextComma && $in_quotes && $char == $quote && $raw[$i-1] != '\\') {
+                if ($in_quotes && $char == $quote && $raw[$i+1] == $quote && !$escaped) {
+                  // Escaping!
+                  $escaped = true;
+                  continue;
+                } elseif ($parseUntilNextComma && $in_quotes && $char == $quote && !$escaped) {
                     // ending quote
                     $in_quotes = false;
                     $quote = "";
@@ -348,7 +353,7 @@ class IFCStepReader extends IFCBaseReader
                 } elseif (in_array($char, ["\"", "'"])) { // quote
                     if ($in_quotes) {
                         // check if quote is equal
-                        if ($char == $quote && $raw[$i - 1] != "\\") {
+                        if ($char == $quote && !$escaped) {
                             // ending of quote
                             $in_quotes = false;
                             //add value to array
@@ -370,6 +375,7 @@ class IFCStepReader extends IFCBaseReader
                     }
                     $value .= $char;
                 }
+                $escaped = false;
             }
 
             return [
