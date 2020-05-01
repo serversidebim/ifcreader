@@ -108,10 +108,10 @@ class IFCSimpleEntity
         }
 
         if ($trueType == 'REAL') {
-            return (real)$param;
+            return (float)$param;
         }
         if ($trueType == 'NUMBER') {
-            return (real)$param;
+            return (float)$param;
         }
         if ($trueType == 'INTEGER') {
             return (integer)$param;
