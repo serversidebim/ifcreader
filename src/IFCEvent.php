@@ -2,10 +2,12 @@
 
 namespace Serversidebim\IFCReader;
 
-class IFCEvent {
+class IFCEvent
+{
     public $data;
-    
-    function __construct($data = null) {
+
+    function __construct($data = null)
+    {
         $this->data = $data;
     }
 }

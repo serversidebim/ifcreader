@@ -14,10 +14,17 @@ use Exception;
  * Description of IFCFileHeader
  *
  * @author Veem5
+ * @property object FILE_DESCRIPTION
+ * @property object FILE_NAME
+ * @property object FILE_SCHEMA
+ * @property object FILE_POPULATION
+ * @property object SECTION_LANGUAGE
+ * @property object SECTION_CONTEXT
  */
-class IFCFileHeader {
+class IFCFileHeader
+{
 
-    private $headerlist = [
+    private array $headerlist = [
         "FILE_DESCRIPTION" => ["description", "implementation_level"],
         "FILE_NAME" => ["name", "time_stamp", "author", "organization", "preprocessor_version", "originating_system", "authorization"],
         "FILE_SCHEMA" => ["schema"],
@@ -25,9 +32,11 @@ class IFCFileHeader {
         "SECTION_LANGUAGE" => ["language"],
         "SECTION_CONTEXT" => ["context"],
     ];
-    private $items = [];
 
-    public function __construct() {
+    private array $items = [];
+
+    public function __construct()
+    {
         // create the header items
         foreach ($this->headerlist as $key => $value) {
             $item = new IFCFileHeaderItem($key, $value);
@@ -35,7 +44,11 @@ class IFCFileHeader {
         }
     }
 
-    public function __get($name) {
+    /**
+     * @throws Exception
+     */
+    public function __get($name)
+    {
         if (key_exists($name, $this->items)) {
             return $this->items[$name];
         } else {
@@ -43,7 +56,8 @@ class IFCFileHeader {
         }
     }
 
-    public function setByArray($name, $array) {
+    public function setByArray($name, $array): IFCFileHeader
+    {
         $item = $this->$name;
         $headerdata = $this->headerlist[$name];
         for ($i = 0; $i < count($headerdata) && $i < count($array); $i++) {

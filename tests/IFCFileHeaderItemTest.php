@@ -32,7 +32,9 @@ class IFCFileHeaderItemTest extends TestCase
         $item = new Serversidebim\IFCReader\IFCFileHeaderItem("Maarten", ["one","two"]);
 
         // try setting some values
+        /** @noinspection PhpUndefinedFieldInspection */
         $item->one = "me";
+        /** @noinspection PhpUndefinedFieldInspection */
         $item->two = "you";
 
         $this->assertEquals("me", $item->one);

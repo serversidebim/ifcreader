@@ -10,13 +10,13 @@ use Exception;
  * Class to read, index and parse the contents of an IFC file provided
  * in STEP format.
  *
- *  @author Maarten Veerman
+ * @author Maarten Veerman
  */
 class IFCStepReader extends IFCBaseReader
 {
     use IFCEventTrait;
 
-    private $filename = null;
+    private $filename;
     private $fh = null;
     public $header;
     private $headerstart = null;
@@ -51,6 +51,9 @@ class IFCStepReader extends IFCBaseReader
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function loadFromFile(string $filename)
     {
         $this->closeFile();
@@ -59,6 +62,9 @@ class IFCStepReader extends IFCBaseReader
         $this->load();
     }
 
+    /**
+     * @throws Exception
+     */
     public function loadFromResource($handle)
     {
         $this->filename = null;
@@ -69,6 +75,9 @@ class IFCStepReader extends IFCBaseReader
         $this->load();
     }
 
+    /**
+     * @throws Exception
+     */
     public function load()
     {
         // get the file handle
@@ -81,6 +90,9 @@ class IFCStepReader extends IFCBaseReader
         $this->parseHeader($fh);
     }
 
+    /**
+     * @throws Exception
+     */
     private function checkFile($fh)
     {
         rewind($fh);
@@ -99,9 +111,11 @@ class IFCStepReader extends IFCBaseReader
 
         rewind($fh);
 
-        return;
     }
 
+    /**
+     * @throws Exception
+     */
     private function parseHeader($fh)
     {
         $header = $this->findHeader($fh);
@@ -113,7 +127,10 @@ class IFCStepReader extends IFCBaseReader
         return $this->header->FILE_SCHEMA->schema[0];
     }
 
-    private function findHeader($fh)
+    /**
+     * @throws Exception
+     */
+    private function findHeader($fh): string
     {
         $header = "";
         $found = false;
@@ -149,6 +166,9 @@ class IFCStepReader extends IFCBaseReader
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function parse()
     {
         if ($this->feof) {
@@ -171,12 +191,14 @@ class IFCStepReader extends IFCBaseReader
         $this->feof = true; // file fully parsed
     }
 
-    public function createEntityFromArray($data)
+    public function createEntityFromArray($data): IFCSimpleEntity
     {
-        $entity = new IFCSimpleEntity($data['class'], $data['data'], $data['id'], $data['raw']);
-        return $entity;
+        return new IFCSimpleEntity($data['class'], $data['data'], $data['id'], $data['raw']);
     }
 
+    /**
+     * @throws Exception
+     */
     public function openFile()
     {
         if (!is_resource($this->fh)) {
@@ -196,7 +218,7 @@ class IFCStepReader extends IFCBaseReader
         }
     }
 
-    public function closeFile()
+    public function closeFile(): bool
     {
         if (is_resource($this->fh) && $this->loadedFromFile) {
             return fclose($this->fh);
@@ -236,7 +258,7 @@ class IFCStepReader extends IFCBaseReader
      * @param string $line The line to clean
      * @return string The cleaned version of $line
      */
-    private function cleanLine($line)
+    private function cleanLine(string $line): string
     {
         return trim(preg_replace('/\/\*.*?\*\/\s*/', '', $line));
     }
@@ -250,11 +272,12 @@ class IFCStepReader extends IFCBaseReader
         return self::parseLineForData($line);
     }
 
+    /** @noinspection PhpUndefinedVariableInspection */
     public static function parseLineForData($line)
     {
         // first we catch the name
         $matches = [];
-        if (preg_match('/^(\#(\d+)\s?=\s?)?(\w+\b)+(.*?)$/', $line, $matches) == 1) {
+        if (preg_match('/^(#(\d+)\s?=\s?)?(\w+\b)+(.*?)$/', $line, $matches) == 1) {
             // match found
             $id = $matches[2];
             $name = $matches[3];
@@ -271,17 +294,17 @@ class IFCStepReader extends IFCBaseReader
             $arrays = [&$items];
 
             //for ($i = strpos($line, $name) + strlen($name); $i < strlen($line); $i++) {
-            for ($i = 0;$i<strlen($raw);$i++) {
+            for ($i = 0; $i < strlen($raw); $i++) {
                 $char = $raw[$i];
 
                 // parseUntilNextComma is meant for situations like:
                 // #1112= IFCPROPERTYSINGLEVALUE('Type Name',$,IFCTEXT('Level 1'),$);
                 // where there is suddenly a reference to an IFC type (IFCTEXT) in this case
 
-                if ($in_quotes && $char == $quote && $raw[$i+1] == $quote && !$escaped) {
-                  // Escaping!
-                  $escaped = true;
-                  continue;
+                if ($in_quotes && $char == $quote && $raw[$i + 1] == $quote && !$escaped) {
+                    // Escaping!
+                    $escaped = true;
+                    continue;
                 } elseif ($parseUntilNextComma && $in_quotes && $char == $quote && !$escaped) {
                     // ending quote
                     $in_quotes = false;
@@ -302,7 +325,7 @@ class IFCStepReader extends IFCBaseReader
                     $parseUntilNextComma = false;
                 } elseif ($parseUntilNextComma && $char != ',' && $char != ")") { // not in quotes, not a comma
                     $value .= $char;
-                } elseif (($char=='.' || $char=='I') && !$in_quotes && !isset($value)) {
+                } elseif (($char == '.' || $char == 'I') && !$in_quotes && !isset($value)) {
                     $value = $char;
                     $in_quotes = false;
                     $parseUntilNextComma = true;
@@ -318,35 +341,29 @@ class IFCStepReader extends IFCBaseReader
                     $arrays[] = &$ar;
                 } elseif ($char == ")" && !$in_quotes) {
                     // ending of array or item
+                    if (isset($value)) {
+                        $end_ar = &$arrays[count($arrays) - 1];
+                        //add value to array
+                        $end_ar[] = $value;
+                        unset($value);
+                    }
                     if (count($arrays) == 1) {
                         // closing of item
-                        if (isset($value)) {
-                            $end_ar = &$arrays[count($arrays) - 1];
-                            //add value to array
-                            array_push($end_ar, $value);
-                            unset($value);
-                        }
                         break;
                     } else {
                         // closing of array
-                        if (isset($value)) {
-                            $end_ar = &$arrays[count($arrays) - 1];
-                            //add value to array
-                            array_push($end_ar, $value);
-                            unset($value);
-                        }
 
                         $ar = &$arrays[count($arrays) - 1];
                         array_pop($arrays);
                         $end_ar = &$arrays[count($arrays) - 1];
-                        $end_ar[] = & $ar;
+                        $end_ar[] = &$ar;
                     }
                 } elseif ($char == "," && !$in_quotes) {
-                    // seperator character
+                    // separator character
                     if (isset($value)) {
                         //add value to array
                         $end_ar = &$arrays[count($arrays) - 1];
-                        array_push($end_ar, $value);
+                        $end_ar[] = $value;
                         unset($value);
                     }
                     $parseUntilNextComma = false;
@@ -358,7 +375,7 @@ class IFCStepReader extends IFCBaseReader
                             $in_quotes = false;
                             //add value to array
                             $end_ar = &$arrays[count($arrays) - 1];
-                            array_push($end_ar, $value);
+                            $end_ar[] = $value;
                             unset($value);
                         } else {
                             // quote not equal or escaped, add to value
@@ -381,7 +398,7 @@ class IFCStepReader extends IFCBaseReader
             return [
                 "id" => $id,
                 "class" => $name,
-                "raw"=> $raw,
+                "raw" => $raw,
                 "data" => $items,
             ];
         } else {
@@ -394,7 +411,7 @@ class IFCStepReader extends IFCBaseReader
      * @return boolean True on success
      * @throws Exception On failure, in case of non-existence of $this->filename
      */
-    public function index()
+    public function index(): bool
     {
         $fh = $this->openFile();
         fseek($fh, $this->offset);
@@ -411,14 +428,15 @@ class IFCStepReader extends IFCBaseReader
                 $this->fireEvent('index', new IFCEvent(["id"=>$match[1],"line"=>$line]));
                 $counter++;
             }*/
-            if (preg_match('/^(\#(\d+)\s?=\s?){1}(\w+\b)+(.*?)$/', $line, $match) == 1) {
+            /** @noinspection Annotator */
+            if (preg_match('/^(#(\d+)\s?=\s?){1}(\w+\b)+(.*?)$/', $line, $match) == 1) {
                 // match found
                 // index the line!
                 $this->fireEvent('index', new IFCEvent([
-                  "id"=>$match[2],
-                  "name"=>$match[3],
-                  "raw"=>$match[4],
-                  "line"=>$line
+                    "id" => $match[2],
+                    "name" => $match[3],
+                    "raw" => $match[4],
+                    "line" => $line
                 ]));
                 $counter++;
             }
@@ -432,40 +450,40 @@ class IFCStepReader extends IFCBaseReader
         return true;
     }
 
-    public function offset($offset)
+    public function offset($offset): IFCStepReader
     {
         $this->offset = $offset;
         return $this;
     }
 
-    public function maxLines($maxLines)
+    public function maxLines($maxLines): IFCStepReader
     {
         $this->maxLines = $maxLines;
         return $this;
     }
 
-    public function maxPointer($maxPointer)
+    public function maxPointer($maxPointer): IFCStepReader
     {
         $this->maxPointer = $maxPointer;
         return $this;
     }
 
-    public function feof()
+    public function feof(): bool
     {
         return $this->feof;
     }
 
-    public function indexed()
+    public function indexed(): bool
     {
         return $this->indexed;
     }
 
-    public function pointer()
+    public function pointer(): int
     {
         return $this->pointer;
     }
 
-    public function previousPointer()
+    public function previousPointer(): int
     {
         return $this->previousPointer;
     }

@@ -3,3 +3,5 @@ nbproject/
 composer.lock
 .DS_Store
 tests/largefile.ifc
+.idea
+/.phpunit.result.cache

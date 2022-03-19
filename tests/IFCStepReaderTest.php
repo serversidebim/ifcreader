@@ -1,6 +1,7 @@
 <?php
 
 use PHPUnit\Framework\TestCase;
+use Serversidebim\ExpressReader\Reader;
 use Serversidebim\IFCReader\IFCSimpleEntity;
 
 /**
@@ -28,6 +29,9 @@ class IFCStepReaderTest extends TestCase
         unset($var);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testLoad()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
@@ -38,6 +42,9 @@ class IFCStepReaderTest extends TestCase
     }
 
 
+    /**
+     * @throws Exception
+     */
     public function testParse()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
@@ -52,6 +59,9 @@ class IFCStepReaderTest extends TestCase
         })->parse();
     }
 
+    /**
+     * @throws Exception
+     */
     public function testEntityMapper()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
@@ -60,7 +70,7 @@ class IFCStepReaderTest extends TestCase
 
         // Load the IFC Scheme
         $contents = file_get_contents(__DIR__ . '/IFC2X3.exp');
-        $express = new Serversidebim\ExpressReader\Reader();
+        $express = new Reader();
         $express->parse($contents);
 
         $reader->on('entity', function ($event) use ($express) {
@@ -98,6 +108,9 @@ class IFCStepReaderTest extends TestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testIndex()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");
@@ -135,6 +148,9 @@ class IFCStepReaderTest extends TestCase
         $this->assertEquals(673, $count);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testMapParametersToTrueValues()
     {
         $filename = realpath(dirname(__FILE__) . "/smallfile.ifc");

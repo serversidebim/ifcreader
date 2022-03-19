@@ -8,41 +8,50 @@
 
 namespace Serversidebim\IFCReader;
 
+use Exception;
+
 /**
  * Description of IFCFileHeaderItem
  *
  * @author Veem5
  */
-class IFCFileHeaderItem {
-    private $ar = [];
-    
-    private $name = "";
-    
-    public function __construct($name, $values) {
+class IFCFileHeaderItem
+{
+    private array $ar = [];
+
+    private string $name;
+
+    public function __construct($name, $values)
+    {
         $this->name = $name;
         foreach ($values as $key => $value) {
             $this->ar[$value] = null;
         }
     }
-    
-    public function getName() {
+
+    public function getName(): string
+    {
         return $this->name;
     }
-    
-    public function __get($name) {
+
+    public function __get($name)
+    {
         if (key_exists($name, $this->ar)) {
             return $this->ar[$name];
         }
         return null;
     }
-    
-    public function __set($name, $value) {
+
+    /**
+     * @throws Exception
+     */
+    public function __set($name, $value)
+    {
         if (key_exists($name, $this->ar)) {
             $this->ar[$name] = $value;
-        }
-        else {
+        } else {
             throw new Exception("Key $name does not exist in IFCFileHeaderItem");
         }
     }
-    
+
 }

@@ -59,7 +59,7 @@ ENDSEC;";
 
         $this->assertEquals(['IFC2X3'], $header->FILE_SCHEMA->schema);
 
-        $this->assertEquals($header->SECTION_CONTEXT->context, null);
+        $this->assertEquals(null, $header->SECTION_CONTEXT->context);
     }
 
     public function testParseHeaderNoNewLine()
@@ -76,6 +76,6 @@ ENDSEC;";
 
         $this->assertEquals(['IFC2X3'], $header->FILE_SCHEMA->schema);
 
-        $this->assertEquals($header->SECTION_CONTEXT->context, null);
+        $this->assertEquals(null, $header->SECTION_CONTEXT->context);
     }
 }

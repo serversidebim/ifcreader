@@ -2,8 +2,8 @@
 
 namespace Serversidebim\IFCReader;
 
-use Serversidebim\ExpressReader\Reader as Scheme;
 use Exception;
+use Serversidebim\ExpressReader\Reader as Scheme;
 use function substr;
 
 /**
@@ -14,12 +14,12 @@ use function substr;
 class IFCSimpleEntity
 {
 
-    public $class;
-    public $data;
-    public $id;
-    public $raw;
+    public string $class;
+    public array $data;
+    public ?string $id;
+    public ?string $raw;
 
-    protected $baseTypes = [
+    protected array $baseTypes = [
         'BOOLEAN',
         'REAL',
         'BINARY',
@@ -39,7 +39,10 @@ class IFCSimpleEntity
         $this->raw = $raw;
     }
 
-    public function mapToScheme(Scheme $scheme)
+    /**
+     * @throws Exception
+     */
+    public function mapToScheme(Scheme $scheme): IFCSimpleEntity
     {
         // find the class in the scheme
         // retrieve the full layout of the entity
@@ -53,16 +56,16 @@ class IFCSimpleEntity
         $keys = array_keys($item->parameters);
 
         // set the data of $this to the correct parameters
-        $newdata = [];
+        $newData = [];
         for ($i = 0; $i < count($this->data); $i++) {
-            $newdata[$keys[$i]] = $this->data[$i];
+            $newData[$keys[$i]] = $this->data[$i];
         }
-        $this->data = $newdata;
+        $this->data = $newData;
 
         return $this;
     }
 
-    public function cleanData(Scheme $scheme)
+    public function cleanData(Scheme $scheme): array
     {
         $entity = $scheme->getFullEntity($this->class);
         $parameters = $entity->parameters;

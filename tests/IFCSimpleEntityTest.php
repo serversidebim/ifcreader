@@ -1,6 +1,5 @@
 <?php
 
-use Serversidebim\ExpressReader;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -28,6 +27,9 @@ class IFCSimpleEntityTest extends TestCase
         unset($var);
     }
 
+    /**
+     * @throws Exception
+     */
     public function testEntity()
     {
         $data = [
@@ -44,6 +46,12 @@ class IFCSimpleEntityTest extends TestCase
         $ent = new Serversidebim\IFCReader\IFCSimpleEntity("IFCPRESENTATIONLAYERASSIGNMENT", $data, "1274", $raw);
 
         $this->assertEquals('IFCPRESENTATIONLAYERASSIGNMENT', $ent->class);
+
+        // Load the IFC Scheme
+        /* $contents = file_get_contents(__DIR__ . '/IFC4.exp');
+        $express = new Reader();
+        $express->parse($contents);
+        file_put_contents(__DIR__ . '/IFC4.ser', serialize($express)); */
 
         // Load the IFC Scheme
         $contents = file_get_contents(__DIR__ . '/IFC4.ser');

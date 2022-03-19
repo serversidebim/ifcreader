@@ -13,6 +13,7 @@ namespace Serversidebim\IFCReader;
  *
  * @author Veem5
  */
-class IFCEntity {
+class IFCEntity
+{
     //put your code here
 }
